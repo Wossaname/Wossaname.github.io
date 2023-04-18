@@ -1,7 +1,307 @@
 <!DOCTYPE html>
 <html>
-<body>
-<h1>Hello World</h1>
-<p>I'm hosted with GitHub Pages.</p>
-</body>
+	<head>
+		<!-- I took the css of the main path of exile website, all credits and copyrights are belonging to Grinding Gear Games -->
+		<link href="./res/style.css" media="screen" rel="stylesheet" type="text/css">
+		<meta charset="utf-8">
+		<style>
+			.layoutBoxContent {
+				margin-top: 50px !important;
+				background-color: rgba(20,20,20,0.75);
+				padding: 10px;
+			}
+			
+			#mainContainer {
+				background: transparent !important;
+			}
+			
+			#keystoneTooltip {
+				width: 200px;
+				min-height:200px;
+				background-color: rgba(20,20,20,0.95);
+				border: 1px #141414 solid;
+				float: left;
+				position: absolute;
+				padding-right:10px;
+			}
+			
+			#skillTooltip {
+				width: 200px;
+				min-height:200px;
+				background-color: rgba(20,20,20,0.95);
+				border: 1px #141414 solid;
+				float: left;
+				position: absolute;
+			}
+			
+			#keystoneName {
+				margin-left: 10px;
+			}
+			
+			#keystoneDesc {
+				margin-left: 10px;
+			}
+			
+			.keystone {
+				width: 184;
+				height: 184;
+				/*background-color: black;*/
+				position: relative;
+				display: inline-block;
+				margin: 5px;
+			}
+			.keystone-image {
+				position: absolute;
+				left: 28px;
+				top: 28px;
+			}
+			.keystone-frame {
+				position: relative;
+				z-index: 1;
+			}
+			
+		</style>
+		<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+		<script src="./res/js.cookie.js"></script>
+		<script src="keystones.js"></script>
+		<script src="skills.js"></script>
+		<script>
+			// Lists took on the Path Of Exile wiki (http://pathofexile.gamepedia.com/)
+			/*var keystones = ["Acrobatics", "Ancestral Bond", "Avatar of Fire", "Blood Magic", "Chaos Inoculation", "Conduit", 
+				"Eldritch Battery", "Elemental Equilibrium", "Ghost Reaver", "Iron Grip", "Iron Reflexes", "Mind Over Matter",
+				"Minion Instability", "Necromantic Aegis", "Ondar's Guile", "Pain Attunement", "Phase Acrobatics", "Point Blank", "Resolute Technique", "Unwavering Stance", "Vaal Pact", "Zealot's Oath"];*/
+			
+			// Lel ( ͡° ͜ʖ ͡°)
+
+			
+			var rolledNumbers = [];
+				
+			$(document).ready(function() {
+				
+				$("#startMotivate").on("click", function() {
+					$("#motivation").html("<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/ZXsQAXx_ao0?autoplay=1\" frameborder=\"0\"></iframe>")
+				});
+				
+				if (window.location.href.indexOf("keystones") > -1 && window.location.href.indexOf("mainSkill") > -1)
+				{
+					decodeShareUrl();
+				}
+				else
+				{
+					randomizeBuild();
+				}
+				
+				$("#randomize").on("click", function() {
+					randomizeBuild();
+				});
+				
+				$("#save").on("click", function() {
+					var urlBase = location.href.substring(0, location.href.lastIndexOf("/")+1);
+					$("#saveContainer").html("<br /><br /><input style=\"background-color: #141414; min-width:350px; color:#A38D6D; padding:5px;\"type=\"text\" value=\"" + urlBase + buildShareUrl() + "\">");
+				});
+				
+				$("#keystonesContainer").delegate(".keystone-frame", "mouseenter", function(e) {
+					$("#keystoneTooltip").css({
+						left: e.pageX + 20,
+						top: e.pageY
+					});
+					handleKeystoneTooltipDisplay(e);
+				});
+				
+				$("#keystonesContainer").delegate(".keystone-frame", "mouseleave", function() {
+					$("#keystoneTooltip").hide();
+				});
+
+			});
+			
+			function handleKeystoneTooltipDisplay(event)
+			{
+				var keystoneId = $(event.target).parent().attr('data-id');
+				$("#keystoneName").html(keystones[keystoneId]["name"]);
+				var desc = keystones[keystoneId]["description"];
+				desc = replaceAll("\n", "<br /><br />", desc);
+				$("#keystoneDesc").html(desc);
+				$("#keystoneTooltip").show();
+			}
+				
+			function buildShareUrl()
+			{
+				var url = "";
+				var currentKeystones = $("#keystonesContainer").find("div");
+				var mainSkill = $("#mainSkill").find("li");
+				
+				var url = "?keystones="
+				for (var i = 0; i < currentKeystones.length; i++)
+				{
+					url += $(currentKeystones[i]).attr('data-id');
+					if (i < currentKeystones.length - 1)
+					{
+						url += ";";
+					}
+				}
+				url += "&mainSkill=";
+				
+				for (var j = 0; j < mainSkill.length; j++)
+				{
+					url += $(mainSkill[j]).attr('data-id');
+					if (j < mainSkill.length - 1)
+					{
+						url += ";";
+					}
+				}
+				
+				return url;
+				
+			}
+			
+			function decodeShareUrl(url)
+			{
+				var params = [];
+				
+				var query = window.location.search.substring(1);
+				var variables = query.split("&");
+				
+				for (var i = 0; i < variables.length; i++)
+				{
+					var value = variables[i].split("=")[1];
+					var key = variables[i].split("=")[0];
+					params.push({"key": key, "value": value});
+				}
+				
+				for (var i = 0; i < params.length; i++)
+				{
+					switch (params[i].key)
+					{
+						case "keystones":
+							decodeKeystones(params[i].value);
+							break;
+						case "mainSkill":
+							decodeMainSkill(params[i].value);
+							break;
+						default:
+							break;
+					}
+				}
+				
+			}
+			
+			function decodeKeystones(keystonesRaw)
+			{
+				var decodedKeystones = keystonesRaw.split(";");
+				
+				//$("#list").empty();
+				$("#keystonesContainer").empty();
+				for (var i = 0; i < decodedKeystones.length; i++)
+				{
+					//$("#list").append("<li data-id=\"" + decodedKeystones[i] + "\">" + urlIt(keystones[decodedKeystones[i]]["name"]) + "</li>");
+					$("#keystonesContainer").append("<td><center><div data-id=\"" + decodedKeystones[i] + "\" class=\"keystone\"><img class=\"keystone-image\" src=\"res/img/" + urlReplace(keystones[decodedKeystones[i]]["name"]) + ".png\" /><img class=\"keystone-frame\" src=\"res/img/Keystone_Frame.png\" /></div><br />" + urlIt(keystones[decodedKeystones[i]]["name"]) + "</center></td>");
+				}
+			}
+			
+			function decodeMainSkill(mainSkillRaw)
+			{
+				$("#mainSkill").empty();
+				
+				$("#mainSkill").html("<li data-id=\"" + mainSkillRaw + "\">" + urlIt(skills[mainSkillRaw]) + "</li>");
+			}
+			
+			
+			function randomizeBuild()
+			{
+				//$("#list").empty();
+				$("#keystonesContainer").empty();
+				rolledNumbers = [];
+				// Randomizes the keystone(s)
+				var keystonesCount = Math.floor((Math.random() * 3) + 2);
+				var num = -1;
+				for (var i = 0; i < keystonesCount; i++)
+				{
+					do {
+						num = Math.floor(Math.random() * keystones.length);
+					} while (rolledNumbers.indexOf(num) > -1);
+					
+					rolledNumbers.push(num);
+					//$("#list").append("<li data-id=\"" + num + "\">" + urlIt(keystones[num]["name"]) + "</li>");
+					
+					$("#keystonesContainer").append("<td><center><div data-id=\"" + num + "\" class=\"keystone\"><img class=\"keystone-image\" src=\"res/img/" + urlReplace(keystones[num]["name"]) + ".png\" /><img class=\"keystone-frame\" src=\"res/img/Keystone_Frame.png\" /></div><br />" + urlIt(keystones[num]["name"]) + "</center></td>");
+					
+				}
+				
+				// Randomizes the main skill
+				var randomizedSkillIndex = Math.floor(Math.random() * skills.length);
+				$("#mainSkill").html("<li data-id=\"" + randomizedSkillIndex + "\">" + urlIt(skills[randomizedSkillIndex]) + "</li>");
+			}
+			
+			/*
+			 *
+			 */
+			function urlReplace(input)
+			{
+				return replaceAll(" ", "_", input);
+			}
+			
+			function urlIt(input)
+			{
+				var urlInput = urlReplace(input);
+				return "<a href=\"http://pathofexile.gamepedia.com/" + urlInput + "\" target=\"_blank\">" + input + "</a></li>";
+			}
+			
+			function replaceAll(find, replace, str) {
+				return str.replace(new RegExp(find, 'g'), replace);
+			}
+			
+		</script>
+	</head>
+	<body>
+		<!--<div id="wrapper">-->
+		<div id="siteCentered">
+			<div id="mainContainer">
+				<div class="layoutBoxContent">
+					<h1><a href="http://pathofexile.com" target="_blank">Path of Exile</a> Build Roulette</h1><br />
+					<h2>Short on build ideas? Looking for a new challenge? This website is made for you!</h2><br /><br />
+					<span>Let RNGesus decide your next build.</span>
+					<hr />
+					<h3>Your randomized keystones :</h3><br />
+					<!--<ul id="list" style="min-height:75px;">
+					</ul>-->
+					<center><div>
+						<table>
+							<tr id="keystonesContainer">
+							</tr>
+						</table>
+					</div></center>
+					<br />
+					<h3>Your randomized main skill :</h3><br />
+					<ul id="mainSkill">
+					</ul>
+					<br />
+					<br />
+					<p>Your main skill is your way to deal most of the damage. You are free, however, to use other skills to support your main skill (example : single target spell, heralds, auras, support gems)</p>
+					<br />
+					<a href="#" id="randomize" type="button" style="border:1px #FFF">Randomize again</a><br />
+					<a href="#" id="save" type="button" style="border:1px #FFF">Save this build!</a>
+					<div id="saveContainer">
+					</div>
+					<br /><br />
+					<h2>Not convinced? Let Shia LaBeouf <a id="startMotivate" href="#">motivate you!</a></h2><br />
+					<div>
+						<center id="motivation"></center>
+					</div>
+					<br /><br /><hr /><!--<span id="motivationDisclaimer"></span>--><br /><br />
+					
+					<span><strong>Content is available under CC BY-NC-SA 3.0 unless otherwise noted. Path of Exile content and materials are trademarks and copyrights of Grinding Gear Games or its licensors. All rights reserved. Images for Keystones are taken from the <a href="https://www.poewiki.net/wiki/" target="_blank">Path of Exile wiki</a><br />Neither us nor Github are affiliated with Grinding Gear Games.</span>
+					<br /><br />
+					<span><small>Made with love in Quebec City, Canada. By Dominic Boulanger, Alexandre Desbiens, Jonathan Nadeau and Eric Poulin</small></span>
+					<br /><br />
+					<span><a href="https://github.com/poebuildroulette/poebuildroulette.github.io" target="_blank">Check it out on GitHub</a></span>
+					<!--<audio id="motivation" src=""></audio>-->
+				</div>
+			</div>
+		</div>
+		
+		<div id="keystoneTooltip" hidden>
+			<span><strong id="keystoneName"></strong></span><br /><hr /><br />
+			<p id="keystoneDesc"></p>
+		</div>
+	</body>
 </html>
